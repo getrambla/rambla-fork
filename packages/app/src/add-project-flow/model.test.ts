@@ -191,16 +191,16 @@ describe("Add Project options", () => {
   it("shows equivalent absolute-home and tilde destinations only once", () => {
     expect(
       buildCloneLocationOptions({
-        parents: ["/Users/moboudra/dev", "~/dev"],
+        parents: ["/Users/dra11y/dev", "~/dev"],
         repositoryName: "dotfiles",
         existingPaths: [],
       }),
     ).toEqual([
       {
-        id: "/Users/moboudra/dev",
-        path: "/Users/moboudra/dev",
-        displayPath: "/Users/moboudra/dev/dotfiles",
-        secondaryText: "Parent directory: /Users/moboudra/dev",
+        id: "/Users/dra11y/dev",
+        path: "/Users/dra11y/dev",
+        displayPath: "/Users/dra11y/dev/dotfiles",
+        secondaryText: "Parent directory: /Users/dra11y/dev",
         disabled: false,
       },
     ]);

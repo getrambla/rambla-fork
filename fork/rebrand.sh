@@ -15,6 +15,10 @@ sub() {
 		-e 's/PASEO/RAMBLA/g' \
 		-e 's/Paseo/Rambla/g' \
 		-e 's/paseo/rambla/g' \
+		-e 's/moboudra/dra11y/g' \
+		-e 's#scope: "@boudra"#scope: "@getrambla"#g' \
+		-e 's#@boudra/#@getrambla/#g' \
+		-e 's/boudra/tgrushka/g' \
 		-e 's/@@SKIP-PASEO-TS@@/.paseo.ts./g' \
 		-e 's/@@SKIP-PASEO-TEST@@/.paseo.test./g'
 }
@@ -41,10 +45,16 @@ git ls-files -z | grep -zi paseo | grep -zEv "$SKIP" | sort -zr | while IFS= rea
 done
 
 # Then contents, only in tracked text files that actually contain the string.
-git grep -lIi paseo -- . | grep -Ev "$SKIP" | while IFS= read -r f; do
+git grep -lIiE 'paseo|boudra' -- . | grep -Ev "$SKIP" | while IFS= read -r f; do
 	sub <"$f" >"$f.rebrand.tmp"
 	cat "$f.rebrand.tmp" >"$f"
 	rm "$f.rebrand.tmp"
 done
 
 echo "remaining case-insensitive paseo hits: $(git grep -lIi paseo -- . | grep -Ev "$SKIP" | wc -l)"
+
+BOUDRA_LEFT="$(git grep -lI boudra -- . | grep -Ev "$SKIP" || true)"
+if [ -n "$BOUDRA_LEFT" ]; then
+	printf 'error: upstream GitHub username left in:\n%s\n' "$BOUDRA_LEFT" >&2
+	exit 1
+fi

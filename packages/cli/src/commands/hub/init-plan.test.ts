@@ -46,7 +46,7 @@ describe("Hub init planning", () => {
 
 describe("Hub init scaffold", () => {
   it.each([
-    ["github", { connection: "github-getrambla", repo: "getrambla/rambla", user: "boudra" }],
+    ["github", { connection: "github-getrambla", repo: "getrambla/rambla", user: "tgrushka" }],
     ["slack", { connection: "slack-rambla", user: "U123456" }],
     ["discord", { connection: "discord-rambla", user: "987654321" }],
   ] satisfies readonly [HubInitProvider, Record<string, string>][])(

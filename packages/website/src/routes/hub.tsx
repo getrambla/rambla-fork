@@ -287,7 +287,7 @@ function DiscordDemo() {
           <span className="font-mono text-xs text-white/50">#engineering</span>
         </div>
         <div className="space-y-5 p-5">
-          <DemoMessage author="moboudra" time="09:41">
+          <DemoMessage author="dra11y" time="09:41">
             <p>
               <Mention /> show me the latest P0 issues
             </p>
@@ -305,7 +305,7 @@ function DiscordDemo() {
             </ul>
           </DemoMessage>
 
-          <DemoMessage author="moboudra" time="09:43">
+          <DemoMessage author="dra11y" time="09:43">
             <p>
               <Mention /> create a pull request for the first one
             </p>

@@ -16,7 +16,7 @@ export function CommunityLinks() {
   }, []);
 
   const handleOpenSponsor = useCallback(() => {
-    void openExternalUrl("https://github.com/sponsors/boudra");
+    void openExternalUrl("https://github.com/sponsors/tgrushka");
   }, []);
 
   const handleOpenDiscord = useCallback(() => {

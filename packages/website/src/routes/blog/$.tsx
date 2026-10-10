@@ -46,7 +46,7 @@ function BlogPost() {
         <h1 className="text-4xl font-bold mb-4">{post.frontmatter.title}</h1>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <a
-            href="https://x.com/moboudra"
+            href="https://x.com/dra11y"
             target="_blank"
             rel="nofollow noopener noreferrer"
             className="flex items-center gap-3 text-foreground hover:text-primary transition-colors"

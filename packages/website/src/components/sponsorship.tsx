@@ -41,12 +41,12 @@ function SectionHeading({
 
 const MAINTAINER_LINK = (
   <a
-    href="https://github.com/boudra"
+    href="https://github.com/tgrushka"
     target="_blank"
     rel="noopener noreferrer"
     className="underline hover:text-white/80"
   >
-    Mo
+    Tom
   </a>
 );
 

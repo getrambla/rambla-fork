@@ -8,13 +8,13 @@
     "expo-two-way-audio",
     "react-native"
   ],
-  "homepage": "https://github.com/boudra/expo-two-way-audio",
+  "homepage": "https://github.com/tgrushka/expo-two-way-audio",
   "bugs": {
     "url": "https://github.com/speechmatics/expo-two-way-audio/issues"
   },
   "license": "MIT",
   "author": "Speechmatics <devrel@speechmatics.com> (https://github.com/speechmatics)",
-  "repository": "https://github.com/boudra/expo-two-way-audio",
+  "repository": "https://github.com/tgrushka/expo-two-way-audio",
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "scripts": {
