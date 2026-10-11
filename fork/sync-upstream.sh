@@ -252,6 +252,7 @@ for tag in "${MERGES[@]}"; do
 		# The rebrand commit lacks the delete list, so the merge would otherwise take its deletions.
 		KEEP="$(git -C "$WT" diff --cached --name-only "$TARGET_TIP" -- "${DELETE_LIST[@]}")"
 		if [ -n "$KEEP" ]; then git -C "$WT" checkout "$TARGET_TIP" --pathspec-from-file=- <<<"$KEEP"; fi
+		(cd "$WT" && node "$HERE/merge-package-json.mjs")
 		CONFLICTS="$(git -C "$WT" diff --name-only --diff-filter=U)"
 		if [ -n "$CONFLICTS" ]; then
 			printf 'error: merging %s conflicts; %s is left unpushed in %s to resolve, commit and push to origin, then run again. Conflicted paths:\n%s\n' "$tag" "$MB" "$WT" "$CONFLICTS" >&2
