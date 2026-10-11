@@ -8,11 +8,12 @@ desktop := home_dir() / ".local/share/applications/rambla.desktop"
 is_macos := if os() == "macos" { "true" } else { "false" }
 stable_dir := home_dir() / ".local" / "rambla"
 stable_repo := stable_dir / "repo"
+server_current := stable_dir / "server-current"
 macos_unit_path := home_dir() / "Library/LaunchAgents"
 
 # Functions
 name(dev) := if dev == "dev" { "rambla-dev" } else { "rambla" }
-install_path(dev) := if dev == "dev" { justfile_dir() } else { stable_repo }
+install_path(dev) := if dev == "dev" { justfile_dir() } else { server_current }
 app_variant(dev) := if dev == "dev" { "development" } else { "production" }
 xcodeproj(dev) := if dev == "dev" { "RamblaDebug" } else { "Rambla" }
 
@@ -297,38 +298,61 @@ dev-server log_level="debug":
 # Reinstall the stable daemon and desktop app under stable_dir.
 install: install-server install-app
 
-# Build the daemon from the dedicated stable clone and reinstall+restart the systemd user unit. ref: "" = current branch tip (must be pushed), or a SHA/branch/tag. mode: "soft" (default) waits for running turns, "immediate" restarts now.
+# Build the daemon at a local commit into stable_dir/server-<hash> without touching the running daemon; keeps the 3 newest. ref: "" = HEAD, or any local SHA/branch/tag.
 [script]
-install-server ref="": && install-unit
+install-server ref="":
     command -v mise >/dev/null 2>&1 || { echo "missing mise" >&2; exit 1; }
-
-    # Dedicated build clone (clone into a sibling, rename only on success); origin is the dev repo itself.
-    mkdir -p "{{ stable_dir }}"
-    if [ ! -d "{{ stable_repo }}" ]; then
-        rm -rf "{{ stable_repo }}.incoming"
-        git clone --no-hardlinks "$(git rev-parse --show-toplevel)" "{{ stable_repo }}.incoming"
-        mv "{{ stable_repo }}.incoming" "{{ stable_repo }}"
-    fi
-
-    # mise env from the dev checkout; running mise inside the clone would install the repo's toolchain pins.
     eval "$(mise env -C "{{ justfile_dir() }}" -s bash)"
 
-    # Build BEFORE touching the unit, so a failed build aborts before restarting the daemon. FETCH_HEAD keeps one code path.
-    ref='{{ ref }}'
-    if [ -z "$ref" ]; then
-        ref="$(git -C "{{ justfile_dir() }}" rev-parse --abbrev-ref HEAD)"
+    repo="{{ justfile_dir() }}"
+    sha="$(git -C "$repo" rev-parse --verify "{{ if ref == "" { "HEAD" } else { ref } }}^{commit}")"
+    if [ -z "{{ ref }}" ]; then
+        # Snapshot uncommitted and untracked changes through a throwaway index; HEAD's date keeps the snapshot hash stable.
+        idx="$(mktemp)"
+        cp "$(git -C "$repo" rev-parse --absolute-git-dir)/index" "$idx"
+        GIT_INDEX_FILE="$idx" git -C "$repo" add -A
+        tree="$(GIT_INDEX_FILE="$idx" git -C "$repo" write-tree)"
+        rm -f "$idx"
+        if [ "$tree" != "$(git -C "$repo" rev-parse "$sha^{tree}")" ]; then
+            date="$(git -C "$repo" log -1 --format=%cI "$sha")"
+            sha="$(GIT_AUTHOR_DATE="$date" GIT_COMMITTER_DATE="$date" git -C "$repo" commit-tree "$tree" -p "$sha" -m "install-server snapshot")"
+            prefix="uncommitted-"
+        fi
     fi
-    cd "{{ stable_repo }}"
-    git fetch origin "$ref"
-    git checkout --quiet --force FETCH_HEAD
-    npm ci
-    npm run build:server
+    dir="{{ stable_dir }}/server-${prefix:-}$(git -C "$repo" rev-parse --short "$sha")"
+    if [ -d "$dir" ]; then
+        echo "already installed: $dir"
+        exit 0
+    fi
 
-    echo "installed daemon to {{ stable_dir }}/daemon"
+    # Build in a sibling and move into place only on success, so a failed build never leaves a server-<hash> behind.
+    mkdir -p "{{ stable_dir }}"
+    git -C "$repo" worktree remove --force "$dir.incoming" 2>/dev/null || rm -rf "$dir.incoming"
+    git -C "$repo" worktree prune
+    git -C "$repo" worktree add --detach "$dir.incoming" "$sha"
+    (cd "$dir.incoming" && npm ci && npm run build:server)
+    git -C "$repo" worktree move "$dir.incoming" "$dir"
 
-    # launchd runs outside any shell; mise must trust the clone's .tool-versions itself.
-    mise trust "{{ stable_repo }}/" || true
-    mise trust "{{ stable_repo }}/.tool-versions" || true
+    # launchd runs outside any shell; mise must trust the install's .tool-versions itself.
+    mise trust "$dir/" || true
+    mise trust "$dir/.tool-versions" || true
+    echo "installed daemon to $dir; run 'just switch-server $(basename "$dir")' to use it"
+
+    # Keep the 3 newest installs, never the one server-current points to.
+    current="$(readlink "{{ server_current }}" 2>/dev/null || true)"
+    ls -1dt "{{ stable_dir }}"/server-* | grep -Ev '/server-current$|\.incoming$' | tail -n +4 | while read -r old; do
+        [ "$old" = "$current" ] && continue
+        git -C "$repo" worktree remove --force "$old"
+        echo "removed $old"
+    done
+
+# Point server-current at an installed server-<hash> (default: the newest) and restart the daemon on it.
+[script]
+switch-server name="": && install-unit
+    dir="{{ if name == "" { "$(ls -1dt " + stable_dir + "/server-* | grep -v '/server-current$' | head -n 1)" } else { stable_dir / name } }}"
+    [ -d "$dir" ] || { echo "not installed: $dir" >&2; exit 1; }
+    ln -sfn "$dir" "{{ server_current }}"
+    echo "server-current -> $dir"
 
 [script]
 install-unit: && restart
@@ -391,14 +415,14 @@ _install-systemd-unit: && _systemctl-reload
 
     [Service]
     Type=simple
-    WorkingDirectory={{ stable_repo }}/packages/server
+    WorkingDirectory={{ server_current }}/packages/server
     Environment="RAMBLA_LOG_LEVEL=info"
     Environment="PATH=$HOME/.local/bin:$PATH"
     EnvironmentFile=-%h/.rambla/daemon.env
     TimeoutStopSec=15
     # AGENTS: ExecStart MUST be exactly "rambla daemon run" with NO FLAGS. Do NOT add --foreground; it crashes the daemon (removed flag; REMOVED_LAUNCH_FLAGS in packages/cli/src/commands/daemon/local-daemon.ts).
     # If you touch this line, re-run the recipe to prove the daemon starts.
-    ExecStart={{ stable_repo }}/packages/cli/bin/rambla daemon run
+    ExecStart={{ server_current }}/packages/cli/bin/rambla daemon run
     Restart=always
     RestartSec=5
 
