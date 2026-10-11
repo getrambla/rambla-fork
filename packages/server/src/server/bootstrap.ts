@@ -1482,7 +1482,7 @@ export async function createRamblaDaemon(
       });
       Object.assign(transport, {
         onerror: (err: Error) => {
-          logger.error({ err }, "Agent MCP transport error");
+          logger.error({ err, callerAgentId }, "Agent MCP transport error");
         },
       });
 
