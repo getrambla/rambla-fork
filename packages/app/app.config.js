@@ -4,7 +4,6 @@ const pkg = require("./package.json");
 const withAndroidAsyncStorageSize = require("./plugins/with-android-async-storage-size");
 const withAndroidProfileable = require("./plugins/with-android-profileable");
 const withFdroidAutolinking = require("./plugins/with-fdroid-autolinking");
-const withPasteInput = require("./plugins/with-paste-input");
 const withAndroidScroll = require("./modules/rambla-scroll/app.plugin");
 // RAMBLA-FORK: fix (no-plan) ensure minimum iOS deployment target
 const withIosDeploymentTarget = require("./plugins/with-ios-deployment-target.rambla");
@@ -147,7 +146,6 @@ export default {
     },
     plugins: [
       "expo-router",
-      withPasteInput,
       // RAMBLA-FORK: fix (no-plan) ensure minimum iOS deployment target
       withIosDeploymentTarget,
       withAndroidScroll,
@@ -185,7 +183,8 @@ export default {
           },
           // RAMBLA-FORK: fix (no-plan) ensure minimum iOS deployment target
           ios: {
-            deploymentTarget: "15.1",
+            deploymentTarget: "16.4",
+            enableSceneSupport: true,
           },
         },
       ],

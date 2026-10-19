@@ -16,6 +16,29 @@ index f22cca3..0a73681 100644
    }
    return props.transform;
  }
+diff --git a/node_modules/react-native-svg/lib/commonjs/web/utils/prepare.js b/node_modules/react-native-svg/lib/commonjs/web/utils/prepare.js
+index d57e7c8..afeb01e 100644
+--- a/node_modules/react-native-svg/lib/commonjs/web/utils/prepare.js
++++ b/node_modules/react-native-svg/lib/commonjs/web/utils/prepare.js
+@@ -32,6 +32,8 @@ const prepare = (self, props = self.props) => {
+     gradientTransform,
+     patternTransform,
+     onPress,
++    accessibilityElementsHidden,
++    importantForAccessibility,
+     ...rest
+   } = props;
+   const clean = {
+@@ -43,7 +45,8 @@ const prepare = (self, props = self.props) => {
+       onResponderRelease: self.touchableHandleResponderRelease,
+       onResponderTerminate: self.touchableHandleResponderTerminate
+     } : null),
+-    ...rest
++    ...rest,
++    ...(accessibilityElementsHidden || importantForAccessibility === 'no-hide-descendants' ? { 'aria-hidden': true } : null),
+   };
+   if (origin != null) {
+     clean['transform-origin'] = origin.toString().replace(',', ' ');
 diff --git a/node_modules/react-native-svg/lib/module/lib/extract/extractTransform.js b/node_modules/react-native-svg/lib/module/lib/extract/extractTransform.js
 index c9d3d6a..085586c 100644
 --- a/node_modules/react-native-svg/lib/module/lib/extract/extractTransform.js
@@ -34,6 +57,29 @@ index c9d3d6a..085586c 100644
    }
    return props.transform;
  }
+diff --git a/node_modules/react-native-svg/lib/module/web/utils/prepare.js b/node_modules/react-native-svg/lib/module/web/utils/prepare.js
+index 113eb2b..c4312bd 100644
+--- a/node_modules/react-native-svg/lib/module/web/utils/prepare.js
++++ b/node_modules/react-native-svg/lib/module/web/utils/prepare.js
+@@ -26,6 +26,8 @@ export const prepare = (self, props = self.props) => {
+     gradientTransform,
+     patternTransform,
+     onPress,
++    accessibilityElementsHidden,
++    importantForAccessibility,
+     ...rest
+   } = props;
+   const clean = {
+@@ -37,7 +39,8 @@ export const prepare = (self, props = self.props) => {
+       onResponderRelease: self.touchableHandleResponderRelease,
+       onResponderTerminate: self.touchableHandleResponderTerminate
+     } : null),
+-    ...rest
++    ...rest,
++    ...(accessibilityElementsHidden || importantForAccessibility === 'no-hide-descendants' ? { 'aria-hidden': true } : null),
+   };
+   if (origin != null) {
+     clean['transform-origin'] = origin.toString().replace(',', ' ');
 diff --git a/node_modules/react-native-svg/src/lib/extract/extractTransform.ts b/node_modules/react-native-svg/src/lib/extract/extractTransform.ts
 index 0c854d6..7dc2828 100644
 --- a/node_modules/react-native-svg/src/lib/extract/extractTransform.ts
@@ -59,3 +105,24 @@ index 0c854d6..7dc2828 100644
    }
    return props.transform as TransformsStyle['transform'];
  }
+diff --git a/node_modules/react-native-svg/src/web/utils/prepare.ts b/node_modules/react-native-svg/src/web/utils/prepare.ts
+index 4106784..008f1ad 100644
+--- a/node_modules/react-native-svg/src/web/utils/prepare.ts
++++ b/node_modules/react-native-svg/src/web/utils/prepare.ts
+@@ -36,6 +36,8 @@ export const prepare = <T extends BaseProps>(
+     gradientTransform,
+     patternTransform,
+     onPress,
++    accessibilityElementsHidden,
++    importantForAccessibility,
+     ...rest
+   } = props;
+ 
+@@ -68,6 +70,7 @@ export const prepare = <T extends BaseProps>(
+         }
+       : null),
+     ...rest,
++    ...(accessibilityElementsHidden || importantForAccessibility === 'no-hide-descendants' ? { 'aria-hidden': true } : null),
+   };
+ 
+   if (origin != null) {

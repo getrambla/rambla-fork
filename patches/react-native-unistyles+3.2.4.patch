@@ -1,5 +1,24 @@
+diff --git a/node_modules/react-native-unistyles/lib/commonjs/core/withUnistyles/withUnistyles.js b/node_modules/react-native-unistyles/lib/commonjs/core/withUnistyles/withUnistyles.js
+index 5a0d049..cb4d775 100644
+--- a/node_modules/react-native-unistyles/lib/commonjs/core/withUnistyles/withUnistyles.js
++++ b/node_modules/react-native-unistyles/lib/commonjs/core/withUnistyles/withUnistyles.js
+@@ -32,9 +32,13 @@ const withUnistyles = (Component, mappings) => {
+       key: uniPropsKey,
+       ...unistyleProps
+     } = narrowedProps.uniProps ? narrowedProps.uniProps(proxifiedTheme, proxifiedRuntime) : {};
++    const {
++      uniProps: _uniProps,
++      ...forwardedProps
++    } = props;
+     const emptyStyles = narrowedProps.style ? Object.fromEntries(Object.entries(Object.getOwnPropertyDescriptors(narrowedProps.style)).filter(([key]) => !key.startsWith('unistyles') && !key.startsWith('_')).map(([key]) => [key, undefined])) : undefined;
+     const combinedProps = {
+-      ...(0, _utils.deepMergeObjects)(mappingsProps, unistyleProps, props),
++      ...(0, _utils.deepMergeObjects)(mappingsProps, unistyleProps, forwardedProps),
+       ...(narrowedProps.style ? {
+         // Override default component styles with undefined values to reset them
+         style: emptyStyles
 diff --git a/node_modules/react-native-unistyles/lib/commonjs/web/registry.js b/node_modules/react-native-unistyles/lib/commonjs/web/registry.js
-index 120ff60..d1ff102 100644
+index 120ff60..5e724b2 100644
 --- a/node_modules/react-native-unistyles/lib/commonjs/web/registry.js
 +++ b/node_modules/react-native-unistyles/lib/commonjs/web/registry.js
 @@ -10,6 +10,17 @@ class UnistylesRegistry {
@@ -97,8 +116,27 @@ index 120ff60..d1ff102 100644
      this.stylesCache.clear();
      this.dependenciesMap.clear();
      this.disposeListenersMap.clear();
+diff --git a/node_modules/react-native-unistyles/lib/module/core/withUnistyles/withUnistyles.js b/node_modules/react-native-unistyles/lib/module/core/withUnistyles/withUnistyles.js
+index 5904a73..2824304 100644
+--- a/node_modules/react-native-unistyles/lib/module/core/withUnistyles/withUnistyles.js
++++ b/node_modules/react-native-unistyles/lib/module/core/withUnistyles/withUnistyles.js
+@@ -27,9 +27,13 @@ export const withUnistyles = (Component, mappings) => {
+       key: uniPropsKey,
+       ...unistyleProps
+     } = narrowedProps.uniProps ? narrowedProps.uniProps(proxifiedTheme, proxifiedRuntime) : {};
++    const {
++      uniProps: _uniProps,
++      ...forwardedProps
++    } = props;
+     const emptyStyles = narrowedProps.style ? Object.fromEntries(Object.entries(Object.getOwnPropertyDescriptors(narrowedProps.style)).filter(([key]) => !key.startsWith('unistyles') && !key.startsWith('_')).map(([key]) => [key, undefined])) : undefined;
+     const combinedProps = {
+-      ...deepMergeObjects(mappingsProps, unistyleProps, props),
++      ...deepMergeObjects(mappingsProps, unistyleProps, forwardedProps),
+       ...(narrowedProps.style ? {
+         // Override default component styles with undefined values to reset them
+         style: emptyStyles
 diff --git a/node_modules/react-native-unistyles/lib/module/web/registry.js b/node_modules/react-native-unistyles/lib/module/web/registry.js
-index 6362f43..8e769f8 100644
+index 6362f43..31e3190 100644
 --- a/node_modules/react-native-unistyles/lib/module/web/registry.js
 +++ b/node_modules/react-native-unistyles/lib/module/web/registry.js
 @@ -6,6 +6,17 @@ export class UnistylesRegistry {
@@ -196,6 +234,28 @@ index 6362f43..8e769f8 100644
      this.stylesCache.clear();
      this.dependenciesMap.clear();
      this.disposeListenersMap.clear();
+diff --git a/node_modules/react-native-unistyles/src/core/withUnistyles/withUnistyles.tsx b/node_modules/react-native-unistyles/src/core/withUnistyles/withUnistyles.tsx
+index e347b7a..86ffab7 100644
+--- a/node_modules/react-native-unistyles/src/core/withUnistyles/withUnistyles.tsx
++++ b/node_modules/react-native-unistyles/src/core/withUnistyles/withUnistyles.tsx
+@@ -37,6 +37,8 @@ export const withUnistyles = <TComponent, TMappings extends GenericComponentProp
+             ? narrowedProps.uniProps(proxifiedTheme, proxifiedRuntime)
+             : {}
+ 
++        const { uniProps: _uniProps, ...forwardedProps } = props
++
+         const emptyStyles = narrowedProps.style
+             ? Object.fromEntries(
+                   Object.entries(Object.getOwnPropertyDescriptors(narrowedProps.style))
+@@ -46,7 +48,7 @@ export const withUnistyles = <TComponent, TMappings extends GenericComponentProp
+             : undefined
+ 
+         const combinedProps = {
+-            ...deepMergeObjects(mappingsProps, unistyleProps, props),
++            ...deepMergeObjects(mappingsProps, unistyleProps, forwardedProps),
+             ...(narrowedProps.style
+                 ? {
+                       // Override default component styles with undefined values to reset them
 diff --git a/node_modules/react-native-unistyles/src/web/registry.ts b/node_modules/react-native-unistyles/src/web/registry.ts
 index 39e0d9d..a21ba95 100644
 --- a/node_modules/react-native-unistyles/src/web/registry.ts

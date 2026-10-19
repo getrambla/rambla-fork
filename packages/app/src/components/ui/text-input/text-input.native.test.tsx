@@ -24,12 +24,12 @@ vi.mock("@gorhom/bottom-sheet", async () => {
   };
 });
 
-vi.mock("@mattermost/react-native-paste-input", async () => {
+// RAMBLA-FORK: fix (no-plan) replace @mattermost/react-native-paste-input with expo-paste-input
+vi.mock("expo-paste-input", async () => {
   const ReactModule = await import("react");
   return {
-    default: ReactModule.forwardRef<HTMLInputElement, Record<string, unknown>>((props, ref) =>
-      ReactModule.createElement("input", { ...props, ref }),
-    ),
+    TextInputWrapper: ({ children }: { children: React.ReactNode }) =>
+      ReactModule.createElement(ReactModule.Fragment, null, children),
   };
 });
 

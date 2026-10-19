@@ -8,14 +8,13 @@ import React, {
 } from "react";
 import { TextInput } from "react-native";
 import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
-import PasteInput, {
-  type PastedFile,
-  type PasteTextInputInstance,
-} from "@mattermost/react-native-paste-input";
+// RAMBLA-FORK: fix (no-plan) replace @mattermost/react-native-paste-input with expo-paste-input
+import { TextInputWrapper, type PasteEventPayload } from "expo-paste-input";
 import { useIsInsideBottomSheet } from "@/components/ui/bottom-sheet-scope";
 import type { EditingTextInputHandle, EditingTextInputProps } from "./types";
 
-type NativeInput = (TextInput | PasteTextInputInstance) & {
+// RAMBLA-FORK: fix (no-plan) replace @mattermost/react-native-paste-input with expo-paste-input
+type NativeInput = TextInput & {
   blur(): void;
   focus(): void;
   isFocused?(): boolean;
@@ -125,11 +124,19 @@ export const EditingTextInput = forwardRef<EditingTextInputHandle, EditingTextIn
       [onChangeText],
     );
     const handlePaste = useCallback(
-      (error: string | null | undefined, files: PastedFile[]) => {
-        if (error) {
-          onPasteError?.(error);
-        } else if (files.length > 0) {
-          onPasteImages?.(files);
+      // RAMBLA-FORK: fix (no-plan) replace @mattermost/react-native-paste-input with expo-paste-input
+      (payload: PasteEventPayload) => {
+        if (payload.type === "unsupported") {
+          onPasteError?.("Unsupported clipboard content");
+        } else if (payload.type === "images" && payload.uris.length > 0) {
+          onPasteImages?.(
+            payload.uris.map((uri) => ({
+              uri,
+              fileName: uri.split("/").pop() ?? "pasted-image",
+              type: "image",
+              fileSize: 0,
+            })),
+          );
         }
       },
       [onPasteError, onPasteImages],
@@ -137,21 +144,9 @@ export const EditingTextInput = forwardRef<EditingTextInputHandle, EditingTextIn
 
     const autoFocus = replacement.revision === 0 ? props.autoFocus : replacement.autoFocus;
 
-    if (onPasteImages || onPasteError) {
-      return (
-        <PasteInput
-          {...props}
-          autoFocus={autoFocus}
-          key={replacement.revision}
-          ref={assignInputRef as React.Ref<PasteTextInputInstance>}
-          defaultValue={textRef.current}
-          onChangeText={handleChangeText}
-          onPaste={handlePaste}
-        />
-      );
-    }
     if (variant === "bottom-sheet") {
-      return (
+      // RAMBLA-FORK: fix (no-plan) replace @mattermost/react-native-paste-input with expo-paste-input
+      const bottomSheetInput = (
         <BottomSheetTextInput
           {...props}
           autoFocus={autoFocus}
@@ -161,8 +156,14 @@ export const EditingTextInput = forwardRef<EditingTextInputHandle, EditingTextIn
           onChangeText={handleChangeText}
         />
       );
+      // RAMBLA-FORK: fix (no-plan) replace @mattermost/react-native-paste-input with expo-paste-input
+      return onPasteImages || onPasteError ? (
+        <TextInputWrapper onPaste={handlePaste}>{bottomSheetInput}</TextInputWrapper>
+      ) : (
+        bottomSheetInput
+      );
     }
-    return (
+    const plainInput = (
       <TextInput
         {...props}
         autoFocus={autoFocus}
@@ -171,6 +172,12 @@ export const EditingTextInput = forwardRef<EditingTextInputHandle, EditingTextIn
         defaultValue={textRef.current}
         onChangeText={handleChangeText}
       />
+    );
+    // RAMBLA-FORK: fix (no-plan) replace @mattermost/react-native-paste-input with expo-paste-input
+    return onPasteImages || onPasteError ? (
+      <TextInputWrapper onPaste={handlePaste}>{plainInput}</TextInputWrapper>
+    ) : (
+      plainInput
     );
   },
 );

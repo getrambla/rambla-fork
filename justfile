@@ -275,8 +275,8 @@ status dev="":
     fi
 
 # Build and run Rambla Debug desktop
-dev-desktop:
-    npm ci
+dev-desktop ci="":
+    if [ "{{ ci }}" == "ci" ]; then npm ci; fi
     npm run dev:desktop
 
 # Build this checkout's server, then stop the installed daemon and run this one detached
@@ -518,8 +518,8 @@ sync-upstream:
 [working-directory('packages/app')]
 [script]
 xcode-gen dev="dev":
-    APP_VARIANT={{ app_variant(dev) }} npx expo prebuild --platform ios
-    (cd ios && pod install)
+    APP_VARIANT={{ app_variant(dev) }} npx expo prebuild --clean --platform ios
+    (cd ios && RCT_IGNORE_PODS_DEPRECATION=1 pod install)
     f="ios/{{ xcodeproj(dev) }}.xcodeproj/project.pbxproj"
     team=$(defaults read com.apple.dt.Xcode IDEProvisioningTeamByIdentifier 2>/dev/null | grep -o 'teamID = [A-Z0-9]\+' | head -1 | cut -d' ' -f3 || true)
     if [ -z "$team" ]; then
@@ -534,3 +534,8 @@ xcode-gen dev="dev":
 xcode-open:
     [ -d "ios/RamblaDebug.xcworkspace" ] || just xcode-gen
     open ios/RamblaDebug.xcworkspace
+
+# FIXME
+upgrade-expo:
+    (cd packages/app && npx expo install --fix)
+    npm ci

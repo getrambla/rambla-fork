@@ -46,7 +46,7 @@ export function FileDropBackdrop() {
 
 const positionStyles = RNStyleSheet.create({
   overlay: {
-    ...RNStyleSheet.absoluteFillObject,
+    ...RNStyleSheet.absoluteFill,
     alignItems: "center",
     justifyContent: "center",
     zIndex: 1000,

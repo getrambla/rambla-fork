@@ -19,22 +19,15 @@
   "types": "build/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "clean": "expo-module clean",
-    "dev": "expo-module build",
-    "lint": "expo-module lint",
-    "test": "expo-module test",
     "format": "oxfmt --check .",
     "format:fix": "oxfmt .",
     "typecheck": "tsgo --noEmit",
-    "expo-module": "expo-module",
     "open:ios": "xed examples/basic-usage/ios",
     "open:android": "open -a \"Android Studio\" examples/basic-usage/android"
   },
   "devDependencies": {
-    "@types/jest": "^29.5.14",
     "@types/react": "^18.0.25",
-    "expo-module-scripts": "^5.0.8",
-    "expo-modules-core": "^2.0.4"
+    "expo-modules-core": "~57.0.21"
   },
   "peerDependencies": {
     "expo": "*",

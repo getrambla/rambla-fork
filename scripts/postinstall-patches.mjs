@@ -34,6 +34,21 @@ const patchedPackages = [
     nodeModulesPath: "node_modules/react-native-svg",
     patchPrefix: "react-native-svg+",
   },
+  // RAMBLA-FORK: fix (no-plan) stub node:diagnostics_channel bundled into the ligatures addon
+  {
+    nodeModulesPath: "node_modules/@xterm/addon-ligatures",
+    patchPrefix: "@xterm+addon-ligatures+",
+  },
+  // RAMBLA-FORK: fix (no-plan) glob 13 promise API, ported from @electron/asar 4
+  {
+    nodeModulesPath: "node_modules/@electron/asar",
+    patchPrefix: "@electron+asar+",
+  },
+  // RAMBLA-FORK: fix (no-plan) rimraf 6 promise API
+  {
+    nodeModulesPath: "node_modules/temp",
+    patchPrefix: "temp+",
+  },
   {
     nodeModulesPath: "node_modules/@mattermost/react-native-paste-input",
     patchPrefix: "@mattermost+react-native-paste-input+",
