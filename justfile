@@ -58,7 +58,7 @@ testflight ref="" quiet="":
 
     job_id=""
     for _ in $(seq 1 30); do
-        job_id="$(gh run view "$run_id" --json jobs --jq '.jobs[] | select(.name == "build") | .databaseId' 2>/dev/null || true)"
+        job_id="$(gh run view "$run_id" --json jobs --jq '.jobs[] | select(.name == "build") | .databaseId' || true)"
         if [ -n "$job_id" ]; then break; fi
         sleep 2
     done
@@ -219,7 +219,7 @@ ci branch="main" *args="":
             for job in $failed_jobs; do
                 # gh refuses logs containing terminal escapes; strip colour codes before grep.
                 gh api "repos/getrambla/rambla/actions/jobs/$job/logs" \
-                    --allow-escape-sequences 2>/dev/null \
+                    --allow-escape-sequences \
                     | sed 's/\x1b\[[0-9;]*m//g; s/^[0-9T:.Z-]*Z //' \
                     | grep -E 'FAIL |AssertionError|Expected:|Received:|error TS|npm error code|fatal:|^ *[0-9]+\) \[|^ *Error: ' \
                     | sort -u | head -15 || true
@@ -320,17 +320,25 @@ install-server ref="":
         fi
     fi
     dir="{{ stable_dir }}/server-${prefix:-}$(git -C "$repo" rev-parse --short "$sha")"
-    if [ -d "$dir" ]; then
-        echo "already installed: $dir"
-        exit 0
-    fi
 
     # Build in a sibling and move into place only on success, so a failed build never leaves a server-<hash> behind.
     mkdir -p "{{ stable_dir }}"
-    git -C "$repo" worktree remove --force "$dir.incoming" 2>/dev/null || rm -rf "$dir.incoming"
+    git -C "$repo" worktree remove --force "$dir.incoming" || rm -rf "$dir.incoming"
     git -C "$repo" worktree prune
     git -C "$repo" worktree add --detach "$dir.incoming" "$sha"
-    (cd "$dir.incoming" && npm ci && npm run build:server)
+    # Cap the Node heap so tsc fits a small VPS; unset by raising INSTALL_SERVER_MAX_HEAP.
+    max_heap="${INSTALL_SERVER_MAX_HEAP:-1536}"
+    if (cd "$dir.incoming" && NODE_OPTIONS="--max-old-space-size=$max_heap" npm ci && NODE_OPTIONS="--max-old-space-size=$max_heap" npm run build:server); then
+        :
+    else
+        rc=$?
+        if [ "$rc" -eq 137 ]; then
+            echo "error: build was SIGKILLed (exit 137) — almost certainly the OOM killer on a low-RAM host." >&2
+            echo "Fix: add swap (e.g. sudo fallocate -l 4G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile)" >&2
+            echo "or lower the heap: INSTALL_SERVER_MAX_HEAP=1024 just install-server" >&2
+        fi
+        exit "$rc"
+    fi
     git -C "$repo" worktree move "$dir.incoming" "$dir"
 
     # launchd runs outside any shell; mise must trust the install's .tool-versions itself.
@@ -339,7 +347,7 @@ install-server ref="":
     echo "installed daemon to $dir; run 'just switch-server $(basename "$dir")' to use it"
 
     # Keep the 3 newest installs, never the one server-current points to.
-    current="$(readlink "{{ server_current }}" 2>/dev/null || true)"
+    current="$(readlink "{{ server_current }}" || true)"
     ls -1dt "{{ stable_dir }}"/server-* | grep -Ev '/server-current$|\.incoming$' | tail -n +4 | while read -r old; do
         [ "$old" = "$current" ] && continue
         git -C "$repo" worktree remove --force "$old"
@@ -377,9 +385,9 @@ install-plist log_level="info" dev="":
       <key>Label</key><string>{{ name(dev) }}</string>
       <key>ProgramArguments</key>
       <array>
-        <string>{{ install_path(dev) }}/packages/cli/bin/rambla</string>
-        <string>daemon</string>
-        <string>run</string>
+        <string>$SHELL</string>
+        <string>-lic</string>
+        <string>exec {{ install_path(dev) }}/packages/cli/bin/rambla daemon run</string>
       </array>
       <key>WorkingDirectory</key><string>{{ install_path(dev) }}/packages/server</string>
       <key>EnvironmentVariables</key>
@@ -422,7 +430,7 @@ _install-systemd-unit: && _systemctl-reload
     TimeoutStopSec=15
     # AGENTS: ExecStart MUST be exactly "rambla daemon run" with NO FLAGS. Do NOT add --foreground; it crashes the daemon (removed flag; REMOVED_LAUNCH_FLAGS in packages/cli/src/commands/daemon/local-daemon.ts).
     # If you touch this line, re-run the recipe to prove the daemon starts.
-    ExecStart={{ server_current }}/packages/cli/bin/rambla daemon run
+    ExecStart=$SHELL -lic 'exec {{ server_current }}/packages/cli/bin/rambla daemon run'
     Restart=always
     RestartSec=5
 
@@ -432,7 +440,7 @@ _install-systemd-unit: && _systemctl-reload
     echo "wrote unit file"
 
     # Disable (reads the OLD unit's [Install]) before the mv, or the old symlink is orphaned.
-    systemctl --user disable rambla >/dev/null 2>&1 || true
+    systemctl --user disable rambla || true
     mv "$tmp_unit" "{{ unit }}"
 
 # Build the desktop app from the stable clone into stable_dir/app; --dir with output redirected so the dev tree's release/ is never involved.
@@ -521,7 +529,7 @@ xcode-gen dev="dev":
     APP_VARIANT={{ app_variant(dev) }} npx expo prebuild --clean --platform ios
     (cd ios && RCT_IGNORE_PODS_DEPRECATION=1 pod install)
     f="ios/{{ xcodeproj(dev) }}.xcodeproj/project.pbxproj"
-    team=$(defaults read com.apple.dt.Xcode IDEProvisioningTeamByIdentifier 2>/dev/null | grep -o 'teamID = [A-Z0-9]\+' | head -1 | cut -d' ' -f3 || true)
+    team=$(defaults read com.apple.dt.Xcode IDEProvisioningTeamByIdentifier 2>&1 | grep -o 'teamID = [A-Z0-9]\+' | head -1 | cut -d' ' -f3 || true)
     if [ -z "$team" ]; then
         echo "error: no signing team found in Xcode settings (IDEProvisioningTeamByIdentifier)" >&2
         exit 1
