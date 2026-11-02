@@ -6,6 +6,14 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { queryClient } from "@/data/query-client";
 import { I18nProvider } from "@/i18n/provider";
 import { RootErrorBoundary } from "@/components/root-error-boundary";
+import { isWeb } from "@/constants/platform";
+
+if (__DEV__ && isWeb && typeof performance?.clearMeasures === "function") {
+  setInterval(() => {
+    performance.clearMeasures();
+    performance.clearMarks();
+  }, 60_000);
+}
 
 // Keep Expo's platform filtering, route root, and lazy import configuration.
 const { ctx: context } = require("expo-router/_ctx") as {
